@@ -1,3 +1,5 @@
+# Trybala Piotr i Rudnicki Slawomir
+
 
 import argparse
 import numpy as np
