@@ -34,54 +34,56 @@ DT = 0.05        # simulation time step [s]
 CAR_LEN = 4.0    # car length [m]
 
 # Fuzzy system
+def prepare_simulation():
+    # Universes
+    speed    = ctrl.Antecedent(np.arange(0, 151, 1), 'speed')
+    distance = ctrl.Antecedent(np.arange(0, 101, 1), 'distance')
+    road     = ctrl.Antecedent(np.arange(0, 10.1, 0.1), 'road')
+    brake    = ctrl.Consequent(np.arange(0, 101, 1), 'brake')
 
-# Universes
-speed    = ctrl.Antecedent(np.arange(0, 151, 1), 'speed')
-distance = ctrl.Antecedent(np.arange(0, 101, 1), 'distance')
-road     = ctrl.Antecedent(np.arange(0, 10.1, 0.1), 'road')
-brake    = ctrl.Consequent(np.arange(0, 101, 1), 'brake')
+    # Membership functions
+    speed['low']    = fuzz.trimf(speed.universe, [0, 0, 60])
+    speed['medium'] = fuzz.trimf(speed.universe, [30, 70, 110])
+    speed['high']   = fuzz.trimf(speed.universe, [80, 150, 150])
 
-# Membership functions
-speed['low']    = fuzz.trimf(speed.universe, [0, 0, 60])
-speed['medium'] = fuzz.trimf(speed.universe, [30, 70, 110])
-speed['high']   = fuzz.trimf(speed.universe, [80, 150, 150])
+    distance['close']  = fuzz.trimf(distance.universe, [0, 0, 30])
+    distance['medium'] = fuzz.trimf(distance.universe, [15, 45, 75])
+    distance['far']    = fuzz.trimf(distance.universe, [55, 100, 100])
 
-distance['close']  = fuzz.trimf(distance.universe, [0, 0, 30])
-distance['medium'] = fuzz.trimf(distance.universe, [15, 45, 75])
-distance['far']    = fuzz.trimf(distance.universe, [55, 100, 100])
+    road['dry'] = fuzz.trimf(road.universe, [0, 0, 4])
+    road['wet'] = fuzz.trimf(road.universe, [2, 5, 8])
+    road['icy'] = fuzz.trimf(road.universe, [6, 10, 10])
 
-road['dry'] = fuzz.trimf(road.universe, [0, 0, 4])
-road['wet'] = fuzz.trimf(road.universe, [2, 5, 8])
-road['icy'] = fuzz.trimf(road.universe, [6, 10, 10])
+    brake['none']     = fuzz.trimf(brake.universe, [0, 0, 15])
+    brake['light']    = fuzz.trimf(brake.universe, [5, 25, 45])
+    brake['moderate'] = fuzz.trimf(brake.universe, [35, 55, 75])
+    brake['strong']   = fuzz.trimf(brake.universe, [65, 100, 100])
 
-brake['none']     = fuzz.trimf(brake.universe, [0, 0, 15])
-brake['light']    = fuzz.trimf(brake.universe, [5, 25, 45])
-brake['moderate'] = fuzz.trimf(brake.universe, [35, 55, 75])
-brake['strong']   = fuzz.trimf(brake.universe, [65, 100, 100])
+    # Rules
+    rules = [
+        # Base table: speed x distance (covers every combination)
+        ctrl.Rule(speed['low'] & distance['far'], brake['none']),
+        ctrl.Rule(speed['low'] & distance['medium'], brake['light']),
+        ctrl.Rule(speed['low'] & distance['close'], brake['moderate']),
+        ctrl.Rule(speed['medium'] & distance['far'], brake['light']),
+        ctrl.Rule(speed['medium'] & distance['medium'], brake['moderate']),
+        ctrl.Rule(speed['medium'] & distance['close'], brake['strong']),
+        ctrl.Rule(speed['high'] & distance['far'], brake['moderate']),
+        ctrl.Rule(speed['high'] & distance['medium'], brake['strong']),
+        ctrl.Rule(speed['high'] & distance['close'], brake['strong']),
+        # Road condition modifiers
+        ctrl.Rule(road['icy'] & distance['medium'], brake['strong']),
+        ctrl.Rule(road['icy'] & speed['high'], brake['strong']),
+        ctrl.Rule(road['wet'] & speed['medium'] & distance['medium'], brake['strong']),
+    ]
 
-# Rules
-rules = [
-    # Base table: speed x distance (covers every combination)
-    ctrl.Rule(speed['low'] & distance['far'], brake['none']),
-    ctrl.Rule(speed['low'] & distance['medium'], brake['light']),
-    ctrl.Rule(speed['low'] & distance['close'], brake['moderate']),
-    ctrl.Rule(speed['medium'] & distance['far'], brake['light']),
-    ctrl.Rule(speed['medium'] & distance['medium'], brake['moderate']),
-    ctrl.Rule(speed['medium'] & distance['close'], brake['strong']),
-    ctrl.Rule(speed['high'] & distance['far'], brake['moderate']),
-    ctrl.Rule(speed['high'] & distance['medium'], brake['strong']),
-    ctrl.Rule(speed['high'] & distance['close'], brake['strong']),
-    # Road condition modifiers
-    ctrl.Rule(road['icy'] & distance['medium'], brake['strong']),
-    ctrl.Rule(road['icy'] & speed['high'], brake['strong']),
-    ctrl.Rule(road['wet'] & speed['medium'] & distance['medium'], brake['strong']),
-]
-
-system = ctrl.ControlSystem(rules)
-sim = ctrl.ControlSystemSimulation(system)
+    system = ctrl.ControlSystem(rules)
+    sim = ctrl.ControlSystemSimulation(system)
+    return sim
 
 
-def braking(v, d, r):
+# Car braking
+def braking(sim, v, d, r):
     # Return brake force [%] for speed v [km/h], distance d [m], road r [0-10].""
     sim.input['speed'] = v
     sim.input['distance'] = d
@@ -92,7 +94,7 @@ def braking(v, d, r):
 
 # Simulation
 
-def simulate(v0_kmh, d0, r, max_steps=5000):
+def simulate(sim, v0_kmh, d0, r, max_steps=5000):
     # Simulate the car approaching an obstacle d0 metres ahead.
     max_decel = 9.0 - 0.75 * r   # available grip: ~9 m/s^2 dry, ~1.5 m/s^2 icy
     v = v0_kmh / 3.6             # km/h -> m/s
@@ -101,7 +103,7 @@ def simulate(v0_kmh, d0, r, max_steps=5000):
 
     for _ in range(max_steps):
         dist = d0 - x
-        b = braking(min(v * 3.6, 150), np.clip(dist, 0, 100), r)
+        b = braking(sim, min(v * 3.6, 150), np.clip(dist, 0, 100), r)
         history.append((t, x, v * 3.6, b))
         if v <= 0 or dist <= 0:
             break
@@ -115,8 +117,9 @@ def simulate(v0_kmh, d0, r, max_steps=5000):
 # Animation
 
 def main():
+    sim = prepare_simulation()
     args = parsing_arguments()
-    t, x, v, b = simulate(args.starting_speed, D0, args.condition).T
+    t, x, v, b = simulate(sim, args.starting_speed, D0, args.condition).T
 
     fig, (ax_road, ax_plot) = plt.subplots(
         2, 1, figsize=(10, 6), gridspec_kw={'height_ratios': [1, 2]})
