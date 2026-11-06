@@ -19,7 +19,7 @@ def parsing_arguments():
 
     parser.add_argument('name', help='name of the saved file')
     parser.add_argument('starting_speed',choices=range(0,301),metavar="[0,301]",type=float, help='define starting speed [km/h] ')
-    parser.add_argument('distance',choices=range(0,81),metavar="[0,81]",type=float, help='define distance to obstacle [m]')
+    # parser.add_argument('distance',choices=range(0,81),metavar="[0,81]",type=float, help='define distance to obstacle [m]')
     parser.add_argument('condition',choices=range(0,11),metavar="[0,11]",type=float, help='define road conditions: 0=dry, 5=wet, 10=icy')
     args = parser.parse_args()
 
@@ -28,11 +28,8 @@ def parsing_arguments():
 
 
 
-# ---- Scenario: change these and compare ----
-V0 = 90       # starting speed [km/h]
-D0 = 80       # distance to obstacle [m]
-ROAD = 5      # 0 = dry, 5 = wet, 10 = icy
 
+D0 = 80       # distance to obstacle [m]
 DT = 0.05        # simulation time step [s]
 CAR_LEN = 4.0    # car length [m]
 
@@ -119,7 +116,7 @@ def simulate(v0_kmh, d0, r, max_steps=5000):
 
 def main():
     args = parsing_arguments()
-    t, x, v, b = simulate(args.starting_speed, args.distance, args.condition).T
+    t, x, v, b = simulate(args.starting_speed, D0, args.condition).T
 
     fig, (ax_road, ax_plot) = plt.subplots(
         2, 1, figsize=(10, 6), gridspec_kw={'height_ratios': [1, 2]})
@@ -137,7 +134,7 @@ def main():
 
     # Live graph
     ax_plot.set_xlim(0, max(t[-1], DT))
-    ax_plot.set_ylim(0, max(V0, 100) * 1.05)
+    ax_plot.set_ylim(0, max(args.starting_speed, 100) * 1.05)
     ax_plot.set_xlabel('time [s]')
     ax_plot.grid(alpha=0.3)
     speed_line, = ax_plot.plot([], [], label='speed [km/h]')
