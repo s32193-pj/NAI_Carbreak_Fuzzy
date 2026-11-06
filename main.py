@@ -1,25 +1,22 @@
 
 import argparse
-# from argparse_range import range_action
 import numpy as np
 import skfuzzy as fuzz
 from skfuzzy import control as ctrl
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from matplotlib.patches import Rectangle
-import PIL
 
 
 def parsing_arguments():
     parser = argparse.ArgumentParser(
-        prog='Car breaking simulation',
-        description='Uses fuzzy logic to simulate car breaking',
+        prog='Car braking simulation',
+        description='Uses fuzzy logic to simulate car braking',
         suggest_on_error=True
     )
 
     parser.add_argument('name', help='name of the saved file')
     parser.add_argument('starting_speed',choices=range(0,151),metavar="[0,150]",type=float, help='define starting speed [km/h] ')
-    # parser.add_argument('distance',choices=range(0,81),metavar="[0,81]",type=float, help='define distance to obstacle [m]')
     parser.add_argument('condition',choices=range(0,11),metavar="[0,10]",type=float, help='define road conditions: 0=dry, 5=wet, 10=icy')
     args = parser.parse_args()
 
@@ -84,7 +81,7 @@ def prepare_simulation():
 
 # Car braking
 def braking(sim, v, d, r):
-    # Return brake force [%] for speed v [km/h], distance d [m], road r [0-10].""
+    # Return brake force [%] for speed v [km/h], distance d [m], road r [0-10].
     sim.input['speed'] = v
     sim.input['distance'] = d
     sim.input['road'] = r
