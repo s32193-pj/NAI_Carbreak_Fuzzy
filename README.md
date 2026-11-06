@@ -12,8 +12,8 @@ Uses fuzzy logic to simulate car breaking
 
 positional arguments:
   name        name of the saved file
-  [0,301]     define starting speed [km/h]
-  [0,11]      define road conditions: 0=dry, 5=wet, 10=icy
+  [0,150]     define starting speed [km/h]
+  [0,10]      define road conditions: 0=dry, 5=wet, 10=icy
 
 options:
   -h, --help  show this help message and exit
@@ -36,7 +36,5 @@ Now example with a crash:
 ![gif of car braking using parameters: 120 80 0](readme_assets/crashing3.gif)
 
 
-Other scenarios (without commands):
-![gif of car braking](readme_assets/crashing2.gif)
-![gif of car braking](readme_assets/crashing.gif)
+Other scenario (without commands):
 ![gif of car braking](readme_assets/brake2.gif)

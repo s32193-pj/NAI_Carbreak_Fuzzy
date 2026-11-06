@@ -18,9 +18,9 @@ def parsing_arguments():
     )
 
     parser.add_argument('name', help='name of the saved file')
-    parser.add_argument('starting_speed',choices=range(0,301),metavar="[0,301]",type=float, help='define starting speed [km/h] ')
+    parser.add_argument('starting_speed',choices=range(0,151),metavar="[0,150]",type=float, help='define starting speed [km/h] ')
     # parser.add_argument('distance',choices=range(0,81),metavar="[0,81]",type=float, help='define distance to obstacle [m]')
-    parser.add_argument('condition',choices=range(0,11),metavar="[0,11]",type=float, help='define road conditions: 0=dry, 5=wet, 10=icy')
+    parser.add_argument('condition',choices=range(0,11),metavar="[0,10]",type=float, help='define road conditions: 0=dry, 5=wet, 10=icy')
     args = parser.parse_args()
 
     return args
