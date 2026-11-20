@@ -1,3 +1,5 @@
+# Piotr Trybala i Rudnicki Slawomir
+
 import argparse
 import json
 import numpy as np
@@ -29,7 +31,7 @@ def print_hi(data):
 
 
 def build_rating_matrix(data):
-    """Users x titles matrix, NaN where a user has not rated a title."""
+    # macierz user'ow i tytulow, NaN w miejscu gdzie user nie ocenil filmu
     users = list(data.keys())
     titles = sorted({title for ratings in data.values() for title in ratings})
     title_idx = {t: i for i, t in enumerate(titles)}
@@ -43,13 +45,8 @@ def build_rating_matrix(data):
 
 
 def build_features(matrix):
-    """Mean-centre each user's ratings and treat unrated titles as neutral (0).
 
-    Centring removes differences in how generous people are with scores,
-    so clustering groups users by taste rather than by rating level.
-    Each vector is then scaled to unit length; otherwise users who rated
-    many titles sit far from everyone and end up alone in their own cluster.
-    """
+    # srednia centralna ocen kazdego usera, nieocenione tytuly otrzymuja (0)
     user_means = np.nanmean(matrix, axis=1, keepdims=True)
     centred = np.nan_to_num(matrix - user_means, nan=0.0)
     norms = np.linalg.norm(centred, axis=1, keepdims=True)
@@ -58,7 +55,7 @@ def build_features(matrix):
 
 
 def score_unseen_titles(matrix, titles, user_row, neighbour_rows):
-    """Average rating each unseen title got from the given neighbours."""
+    # srednia ocena kazdego niewidzianego tytulu wzietego od sasiadow usera
     unseen = np.isnan(matrix[user_row])
     scores = []
     for t in np.where(unseen)[0]:
@@ -69,6 +66,7 @@ def score_unseen_titles(matrix, titles, user_row, neighbour_rows):
     return scores
 
 
+# funkcja wyszukujaca rekomendacje, wynik zwrocony w dict
 def run_kmeans_recommendations(data, user1, n_clusters=3, count=5):
 
     users, titles, matrix = build_rating_matrix(data)
@@ -81,8 +79,8 @@ def run_kmeans_recommendations(data, user1, n_clusters=3, count=5):
     user_row = users.index(user1)
     user_cluster = labels[user_row]
 
-    # Visit clusters from the user's own one outwards (by distance to centroid),
-    # adding their members until there are enough unseen titles to fill both lists.
+
+    #sprawdzane sa clustery od clustery uzytkownika, dodawani sa nowi czlonkowie az zostana zapelnione obie listy
     distances = np.linalg.norm(kmeans.cluster_centers_ - features[user_row], axis=1)
     cluster_order = [user_cluster] + [c for c in np.argsort(distances) if c != user_cluster]
 
@@ -96,7 +94,7 @@ def run_kmeans_recommendations(data, user1, n_clusters=3, count=5):
         if len(scores) >= 2 * count:
             break
 
-    # Ties broken by how many neighbours rated the title (more votes = more trust).
+    # rowne oceny rozwiazywane przez ilosc glosow (tytul z wieksza iloscia glosow wygrywa)
     best = sorted(scores, key=lambda s: (-s[1], -s[2], s[0]))
     worst = sorted(scores, key=lambda s: (s[1], -s[2], s[0]))
     recommended = best[:count]
@@ -116,6 +114,7 @@ def run_kmeans_recommendations(data, user1, n_clusters=3, count=5):
     }
 
 
+# prezentacja wynikow
 def print_results(results):
     print(f"User: {results['user']}")
     print('\nClusters:')
